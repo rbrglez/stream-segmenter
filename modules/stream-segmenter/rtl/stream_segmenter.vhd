@@ -60,6 +60,8 @@ architecture rtl of stream_segmenter is
     ----------------------------------------------------------------------------
     type reg_t is record
         word_cnt : natural range 0 to C_WORDS_PER_PACKET_WIDTH;
+
+        pl_ready : std_logic;
     end record;
 
     ----------------------------------------------------------------------------
@@ -81,7 +83,7 @@ architecture rtl of stream_segmenter is
 begin
 
     in_pl_concat_data <= in_pl_last & i_in_stream_data;
-    o_in_stream_ready <= in_pl_ready;
+    o_in_stream_ready <= r.pl_ready;
 
     -- break logic chain between in ready and out ready
     u_pl_stage : entity olo.olo_base_pl_stage
@@ -115,16 +117,21 @@ begin
         -- Hold variables stable
         v := r;
 
+        ------------------------------------------------------------------------
+        --
+        ------------------------------------------------------------------------
         if (i_en = '1') then
             in_pl_valid <= i_in_stream_valid;
+            v.pl_ready  := in_pl_ready;
         else
             in_pl_valid <= '0';
+            v.pl_ready  := '0';
         end if;
         in_pl_last <= i_in_stream_last;
 
         ------------------------------------------------------------------------
+        --
         ------------------------------------------------------------------------
-
         if (in_pl_valid = '1' and in_pl_ready = '1') then
             v.word_cnt := r.word_cnt + 1;
 
@@ -132,18 +139,23 @@ begin
                 v.word_cnt := 0;
             end if;
 
+            if (unsigned(i_words_per_packet) = 0) then
+                in_pl_last <= '0';
+                v.word_cnt := 0;
 
-            if (r.word_cnt > unsigned(i_words_per_packet) - 2) then
+            elsif (unsigned(i_words_per_packet) = 1) then
+                in_pl_last <= '1';
+                v.word_cnt := 0;
+
+            elsif (r.word_cnt > unsigned(i_words_per_packet) - 2) then
                 in_pl_last <= '1';
                 v.word_cnt := 0;
             end if;
         end if;
 
-
         ------------------------------------------------------------------------
-        ------------------------------------------------------------------------
-
         -- Apply to record
+        ------------------------------------------------------------------------
         r_next <= v;
 
     end process;
@@ -157,7 +169,7 @@ begin
             r <= r_next;
             if (i_rst = '1') then
                 r.word_cnt <= 0;
-
+                r.pl_ready <= '0';
             end if;
         end if;
     end process;
