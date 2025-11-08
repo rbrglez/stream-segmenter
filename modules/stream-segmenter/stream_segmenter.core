@@ -1,0 +1,46 @@
+CAPI=2:
+
+################################################################################
+# Header
+################################################################################
+name: "rbrglez:stream-segmenter:stream-segmenter:0.1.0"
+description: "Segment Stream from big packets to smaller packets"
+
+################################################################################
+# Filesets
+################################################################################
+filesets:
+  rtl_files:
+    depend:
+      - "^open-logic:open-logic-dev:base:4.0.0"
+    files:
+      - "rtl/stream_segmenter.vhd"
+    file_type: "vhdlSource-2008"
+
+  tb_files:
+    depend:
+      - "^xbc:utils:testbench_utils:0.2.0"
+    files:
+      - "tb/stream_segmenter_tb.vhd"
+    file_type: "vhdlSource-2008"
+
+################################################################################
+# Targets
+################################################################################
+targets:
+  default: &default
+    filesets:
+      - "rtl_files"
+
+  project:
+    <<: *default
+    filesets_append:
+      - "tb_files"
+    default_tool: "vivado"
+    toplevel: "stream_segmenter"
+    tools:
+      vivado:
+        synth: "none"
+        pnr: "none"
+        source_mgmt_mode: "All"
+        part: "xc7z035-ffg900-2"

@@ -1,0 +1,11 @@
+# Fusesoc
+build/
+fusesoc.conf
+
+# Python
+.venv/
+__pycache__/
+
+# VUnit co-simulation
+*.fix
+vunit_out/
