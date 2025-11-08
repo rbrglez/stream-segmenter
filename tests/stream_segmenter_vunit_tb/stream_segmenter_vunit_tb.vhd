@@ -86,6 +86,54 @@ architecture sim of stream_segmenter_vunit_tb is
 
     end procedure;
 
+    procedure pushPacket (
+            signal net : inout network_t;
+            size       :       integer;
+            startVal   :       integer := 1;
+            blocking   :       boolean := false
+        ) is
+        variable Tlast_v : std_logic := '0';
+    begin
+
+        -- Loop over data-beats
+        for i in 0 to size-1 loop
+            -- Push Data
+            if i = size-1 then
+                Tlast_v := '1';
+            end if;
+
+            push_axi_stream(net, C_AXIS_MASTER, toUslv(startVal + i, G_STREAM_WIDTH), tlast => Tlast_v);
+        end loop;
+
+        if blocking then
+            wait_until_idle(net, as_sync(C_AXIS_MASTER));
+        end if;
+    end procedure;
+
+    procedure checkPacket (
+            signal net : inout network_t;
+            size       :       integer;
+            startVal   :       integer := 1;
+            blocking   :       boolean := false
+        ) is
+        variable Tlast_v : std_logic := '0';
+    begin
+
+        -- Loop over data-beats
+        for i in 0 to size-1 loop
+            -- Data
+            if i = size-1 then
+                Tlast_v := '1';
+            end if;
+
+            check_axi_stream(net, C_AXIS_SLAVE, toUslv(startVal + i, G_STREAM_WIDTH), tlast => Tlast_v, blocking => false);
+        end loop;
+
+        if blocking then
+            wait_until_idle(net, as_sync(C_AXIS_SLAVE));
+        end if;
+    end procedure;
+
     -----------------------------------------------------------------------------------------------
     -- Interface Signals
     -----------------------------------------------------------------------------------------------
@@ -128,6 +176,22 @@ begin
             wait until rising_edge(i_clk);
             i_rst <= '0';
             wait until rising_edge(i_clk);
+
+            --------------------------------------------------------------------
+            --------------------------------------------------------------------
+            if run("Developing") then
+                i_en <= '1';
+                i_words_per_packet <= toUslv(15, i_words_per_packet'length);
+
+                pushPacket(net, 10);
+                checkPacket(net, 10);
+
+                pushPacket(net, 20);
+                checkPacket(net, 15, 1);
+                checkPacket(net, 5, 16);
+
+            end if;
+
 
             --------------------------------------------------------------------
             --------------------------------------------------------------------

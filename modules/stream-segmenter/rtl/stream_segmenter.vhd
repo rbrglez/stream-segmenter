@@ -59,7 +59,8 @@ architecture rtl of stream_segmenter is
     -- Types
     ----------------------------------------------------------------------------
     type reg_t is record
-        word_cnt : natural range 0 to C_WORDS_PER_PACKET_WIDTH;
+        --word_cnt : natural range 0 to C_WORDS_PER_PACKET_WIDTH;
+        word_cnt : natural;
 
         pl_ready : std_logic;
     end record;
