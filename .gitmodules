@@ -1,0 +1,6 @@
+[submodule "submodules/open-logic"]
+	path = submodules/open-logic
+	url = git@github.com:rbrglez/open-logic.git
+[submodule "submodules/xbc-testbench-utils"]
+	path = submodules/xbc-testbench-utils
+	url = git@github.com:rbrglez/xbc-testbench-utils.git
