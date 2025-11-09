@@ -35,7 +35,7 @@ entity stream_segmenter is
         ------------------------------------------------------------------------
         -- In Stream Interface
         ------------------------------------------------------------------------
-        i_in_stream_valid : in  std_logic;
+        i_in_stream_valid : in  std_logic := '1';
         i_in_stream_last  : in  std_logic := '0';
         o_in_stream_ready : out std_logic;
         i_in_stream_data  : in  std_logic_vector(G_STREAM_WIDTH - 1 downto 0);
