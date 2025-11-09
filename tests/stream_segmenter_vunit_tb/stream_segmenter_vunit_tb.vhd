@@ -18,6 +18,7 @@ context vunit_lib.vc_context;
 library olo;
 use olo.olo_base_pkg_math.all;
 use olo.olo_base_pkg_logic.all;
+use olo.olo_base_pkg_string.all;
 
 ---------------------------------------------------------------------------------------------------
 -- Entity
@@ -29,6 +30,7 @@ entity stream_segmenter_vunit_tb is
 
         G_STREAM_WIDTH         : positive := 8;
         G_MAX_WORDS_PER_PACKET : positive := 255;
+        G_ZERO_WORDS_MODE      : string   := "NO_SEGMENT";
 
         G_RANDOM_STALL : boolean := false
     );
@@ -39,6 +41,8 @@ architecture sim of stream_segmenter_vunit_tb is
     -----------------------------------------------------------------------------------------------
     -- Constants
     -----------------------------------------------------------------------------------------------
+    constant C_ZERO_WORDS_MODE : string := toLower(G_ZERO_WORDS_MODE);
+
     constant C_WORDS_PER_PACKET : natural := 10;
 
     -----------------------------------------------------------------------------------------------
@@ -241,10 +245,10 @@ begin
 
                     ------------------------------------------------------------
                     i_words_per_packet <= toUslv(1, i_words_per_packet'length);
-                    pushPacket(net, size => C_WORDS_PER_PACKET);
+                    pushPacket(net, size => 2*C_WORDS_PER_PACKET);
 
-                    for i in 1 to C_WORDS_PER_PACKET loop
-                        if (i = C_WORDS_PER_PACKET) then
+                    for i in 1 to 2*C_WORDS_PER_PACKET loop
+                        if (i = 2*C_WORDS_PER_PACKET) then
                             checkPacket(net, size => 1, startVal => i, blocking => true);
                         else
                             checkPacket(net, size => 1, startVal => i);
@@ -253,12 +257,22 @@ begin
 
                     ------------------------------------------------------------
                     i_words_per_packet <= toUslv(0, i_words_per_packet'length);
-                    pushPacket(net, size  => C_WORDS_PER_PACKET);
-                    checkPacket(net, size => C_WORDS_PER_PACKET, blocking => true);
+                    pushPacket(net, size => 2*C_WORDS_PER_PACKET);
+
+                    if (C_ZERO_WORDS_MODE = "always_segment") then
+                        for i in 1 to 2*C_WORDS_PER_PACKET loop
+                            if (i = 2*C_WORDS_PER_PACKET) then
+                                checkPacket(net, size => 1, startVal => i, blocking => true);
+                            else
+                                checkPacket(net, size => 1, startVal => i);
+                            end if;
+                        end loop;
+                    else
+                        checkPacket(net, size => 2*C_WORDS_PER_PACKET, blocking => true);
+                    end if;
                 end loop;
 
             end if;
-
 
             wait for 1 us;
             wait_until_idle(net, as_sync(C_AXIS_MASTER));
@@ -281,7 +295,8 @@ begin
     dut : entity work.stream_segmenter
         generic map (
             G_STREAM_WIDTH         => G_STREAM_WIDTH,
-            G_MAX_WORDS_PER_PACKET => G_MAX_WORDS_PER_PACKET
+            G_MAX_WORDS_PER_PACKET => G_MAX_WORDS_PER_PACKET,
+            G_ZERO_WORDS_MODE      => G_ZERO_WORDS_MODE
         )
         port map (
             i_clk => i_clk,
