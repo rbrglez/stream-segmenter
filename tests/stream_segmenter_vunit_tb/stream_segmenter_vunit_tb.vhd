@@ -189,39 +189,39 @@ begin
             --------------------------------------------------------------------
             --------------------------------------------------------------------
             if run("words_per_packet_change") then
-                i_en  <= '1';
+                i_en <= '1';
 
                 ----------------------------------------------------------------
                 i_words_per_packet <= toUslv(3, i_words_per_packet'length);
-                pushPacket(net, size => 5);
+                pushPacket(net, size  => 5);
                 checkPacket(net, size => 3);
-                checkPacket(net, size  => 2, startVal => 4, blocking => true);
+                checkPacket(net, size => 2, startVal => 4, blocking => true);
 
                 ----------------------------------------------------------------
                 i_words_per_packet <= toUslv(8, i_words_per_packet'length);
-                pushPacket(net, size => 7);
+                pushPacket(net, size  => 7);
                 checkPacket(net, size => 7);
 
-                pushPacket(net, size => 9);
+                pushPacket(net, size  => 9);
                 checkPacket(net, size => 8);
                 checkPacket(net, size => 1, startVal => 9, blocking => true);
 
                 ----------------------------------------------------------------
                 i_words_per_packet <= toUslv(4, i_words_per_packet'length);
-                pushPacket(net, size => 15);
+                pushPacket(net, size  => 15);
                 checkPacket(net, size => 4);
                 checkPacket(net, size => 4, startVal => 4 + 1);
                 checkPacket(net, size => 4, startVal => 8 + 1);
-                checkPacket(net, size => 3, startVal => 12 + 1, blocking  => true);
+                checkPacket(net, size => 3, startVal => 12 + 1, blocking => true);
             end if;
 
             --------------------------------------------------------------------
             --------------------------------------------------------------------
             if run("en_testing") then
-                i_en <= '0';
+                i_en               <= '0';
                 i_words_per_packet <= toUslv(15, i_words_per_packet'length);
 
-                pushPacket(net, size => 34);
+                pushPacket(net, size  => 34);
                 checkPacket(net, size => 15);
                 wait for 50 * C_CLK_PERIOD;
                 i_en <= '1';
@@ -229,6 +229,33 @@ begin
                 checkPacket(net, size => 15, startVal => 15 + 1);
                 wait for 50 * C_CLK_PERIOD;
                 checkPacket(net, size => 4, startVal => 30 + 1);
+
+            end if;
+
+            --------------------------------------------------------------------
+            --------------------------------------------------------------------
+            if run("words_per_packet_edge_case") then
+                i_en <= '1';
+
+                for j in 0 to 1 loop
+
+                    ------------------------------------------------------------
+                    i_words_per_packet <= toUslv(1, i_words_per_packet'length);
+                    pushPacket(net, size => C_WORDS_PER_PACKET);
+
+                    for i in 1 to C_WORDS_PER_PACKET loop
+                        if (i = C_WORDS_PER_PACKET) then
+                            checkPacket(net, size => 1, startVal => i, blocking => true);
+                        else
+                            checkPacket(net, size => 1, startVal => i);
+                        end if;
+                    end loop;
+
+                    ------------------------------------------------------------
+                    i_words_per_packet <= toUslv(0, i_words_per_packet'length);
+                    pushPacket(net, size  => C_WORDS_PER_PACKET);
+                    checkPacket(net, size => C_WORDS_PER_PACKET, blocking => true);
+                end loop;
 
             end if;
 
