@@ -1,0 +1,14 @@
+{
+  "signal": [
+    { "name": "i_clk",              "wave": "P......." },
+    { "name": "i_words_per_packet", "wave": "2.......", "data": ["3"] },
+    { "name": "i_in_stream_valid",  "wave": "1....0.." },
+    { "name": "o_in_stream_ready",  "wave": "1......." },
+    { "name": "i_in_stream_data",   "wave": "22222x..", "data": ["1","2","3","4","5","6","7","8","9"] },
+    { "name": "i_in_stream_last",   "wave": "0...10.." },
+    { "name": "o_out_stream_valid", "wave": "01....0." },
+    { "name": "i_out_stream_ready", "wave": "1......." },
+    { "name": "o_out_stream_data",  "wave": "x33344x.", "data": ["1","2","3","4","5","6","7","8","9"] },
+    { "name": "o_out_stream_last",  "wave": "0..1010." },
+  ]
+}

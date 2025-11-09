@@ -20,6 +20,10 @@ the behavior depends on the generic _G_ZERO_WORDS_MODE_:
 - "ALWAYS_SEGMENT": behaves as if _i_words_per_packet_ = 1, ensuring each word forms a separate packet with last asserted.
 - "NO_SEGMENT": segmentation is disabled, and the input stream is passed through unchanged.
 
+Example waveform for a 5-word input packet with _i_words_per_packet_ = 3:
+
+![basic_waveform](./stream_segmenter/stream_segmenter_basic.png)
+
 ## Generics
 
 | Name                   | Type     | Default          | Description                                                                                                                                                                                                   |
