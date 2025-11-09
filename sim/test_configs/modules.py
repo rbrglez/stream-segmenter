@@ -9,10 +9,6 @@ from .utils import named_config, make_short_name
 import sys
 import os
 
-# Import for fix cosimulations
-sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
-from modules import *
-
 ################################################################################
 # Functionality
 ################################################################################
@@ -24,8 +20,10 @@ def add_configs(lib):
     """
 
     ############################################################################
-    # fix_dsp_mac 
+    # stream_segmenter
     ############################################################################
     tb = lib.test_bench('stream_segmenter_vunit_tb')
 
-    named_config(tb, {'G_STREAM_WIDTH' : 8})
+    stall_options = [True, False]
+    for stall in stall_options:
+        named_config(tb, {'G_STREAM_WIDTH' : 8, 'G_RANDOM_STALL' : stall})

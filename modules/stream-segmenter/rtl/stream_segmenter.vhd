@@ -84,7 +84,8 @@ architecture rtl of stream_segmenter is
 begin
 
     in_pl_concat_data <= in_pl_last & i_in_stream_data;
-    o_in_stream_ready <= r.pl_ready;
+    o_in_stream_ready <= r_next.pl_ready;
+    --o_in_stream_ready <= in_pl_ready;
 
     -- break logic chain between in ready and out ready
     u_pl_stage : entity olo.olo_base_pl_stage
@@ -141,7 +142,7 @@ begin
             end if;
 
             if (unsigned(i_words_per_packet) = 0) then
-                in_pl_last <= '0';
+                --in_pl_last <= '0';
                 v.word_cnt := 0;
 
             elsif (unsigned(i_words_per_packet) = 1) then

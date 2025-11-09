@@ -39,19 +39,17 @@ architecture sim of stream_segmenter_vunit_tb is
     -----------------------------------------------------------------------------------------------
     -- Constants
     -----------------------------------------------------------------------------------------------
+    constant C_WORDS_PER_PACKET : natural := 10;
 
     -----------------------------------------------------------------------------------------------
-    -- TB Defnitions
+    -- TB Definitions
     -----------------------------------------------------------------------------------------------
     constant C_CLK_FREQUENCY : real := 100.0e6;
     constant C_CLK_PERIOD    : time := (1 sec) / C_CLK_FREQUENCY;
 
     -----------------------------------------------------------------------------------------------
-    -- TB Defnitions
+    -- TB Definitions
     -----------------------------------------------------------------------------------------------
-    shared variable InDelay_v  : time := 0 ns;
-    shared variable OutDelay_v : time := 0 ns;
-
     -- *** Verification Components ***
     constant C_AXIS_MASTER : axi_stream_master_t := new_axi_stream_master (
             data_length  => G_STREAM_WIDTH,
@@ -64,28 +62,6 @@ architecture sim of stream_segmenter_vunit_tb is
         );
 
     -- *** Procedures ***
-    procedure push100 (signal net : inout network_t) is
-    begin
-
-        -- Push 100 values
-        for i in 0 to 99 loop
-            wait for InDelay_v;
-            push_axi_stream(net, C_AXIS_MASTER, toUslv(i, G_STREAM_WIDTH));
-        end loop;
-
-    end procedure;
-
-    procedure check100 (signal net : inout network_t) is
-    begin
-
-        -- Check 100 values
-        for i in 0 to 99 loop
-            wait for OutDelay_v;
-            check_axi_stream(net, C_AXIS_SLAVE, toUslv(i, G_STREAM_WIDTH), blocking => false, msg => "data " & integer'image(i));
-        end loop;
-
-    end procedure;
-
     procedure pushPacket (
             signal net : inout network_t;
             size       :       integer;
@@ -94,11 +70,10 @@ architecture sim of stream_segmenter_vunit_tb is
         ) is
         variable Tlast_v : std_logic := '0';
     begin
-
         -- Loop over data-beats
-        for i in 0 to size-1 loop
+        for i in 0 to size - 1 loop
             -- Push Data
-            if i = size-1 then
+            if i = size - 1 then
                 Tlast_v := '1';
             end if;
 
@@ -120,9 +95,9 @@ architecture sim of stream_segmenter_vunit_tb is
     begin
 
         -- Loop over data-beats
-        for i in 0 to size-1 loop
+        for i in 0 to size - 1 loop
             -- Data
-            if i = size-1 then
+            if i = size - 1 then
                 Tlast_v := '1';
             end if;
 
@@ -166,9 +141,6 @@ begin
 
         while test_suite loop
 
-            InDelay_v  := 0 ns;
-            OutDelay_v := 0 ns;
-
             -- Reset
             wait until rising_edge(i_clk);
             i_rst <= '1';
@@ -179,39 +151,85 @@ begin
 
             --------------------------------------------------------------------
             --------------------------------------------------------------------
-            if run("Developing") then
-                i_en <= '1';
+            if run("no_segmentation") then
+                i_en               <= '1';
+                i_words_per_packet <= toUslv(C_WORDS_PER_PACKET, i_words_per_packet'length);
+
+                for i in 1 to C_WORDS_PER_PACKET loop
+                    pushPacket(net, size  => i);
+                    checkPacket(net, size => i);
+                end loop;
+            end if;
+
+            --------------------------------------------------------------------
+            --------------------------------------------------------------------
+            if run("one_segmentation") then
+                i_en               <= '1';
+                i_words_per_packet <= toUslv(C_WORDS_PER_PACKET, i_words_per_packet'length);
+
+                for i in C_WORDS_PER_PACKET + 1 to 2*C_WORDS_PER_PACKET loop
+                    pushPacket(net, size  => i);
+                    checkPacket(net, size => C_WORDS_PER_PACKET);
+                    checkPacket(net, size => i- C_WORDS_PER_PACKET, startVal => C_WORDS_PER_PACKET + 1);
+                end loop;
+            end if;
+
+            --------------------------------------------------------------------
+            --------------------------------------------------------------------
+            if run("multiple_segmentations") then
+                i_en               <= '1';
+                i_words_per_packet <= toUslv(C_WORDS_PER_PACKET, i_words_per_packet'length);
+
+                pushPacket(net, size => 10*C_WORDS_PER_PACKET);
+                for i in 0 to 10 - 1 loop
+                    checkPacket(net, size => C_WORDS_PER_PACKET, startVal => i*C_WORDS_PER_PACKET + 1);
+                end loop;
+            end if;
+
+            --------------------------------------------------------------------
+            --------------------------------------------------------------------
+            if run("words_per_packet_change") then
+                i_en  <= '1';
+
+                ----------------------------------------------------------------
+                i_words_per_packet <= toUslv(3, i_words_per_packet'length);
+                pushPacket(net, size => 5);
+                checkPacket(net, size => 3);
+                checkPacket(net, size  => 2, startVal => 4, blocking => true);
+
+                ----------------------------------------------------------------
+                i_words_per_packet <= toUslv(8, i_words_per_packet'length);
+                pushPacket(net, size => 7);
+                checkPacket(net, size => 7);
+
+                pushPacket(net, size => 9);
+                checkPacket(net, size => 8);
+                checkPacket(net, size => 1, startVal => 9, blocking => true);
+
+                ----------------------------------------------------------------
+                i_words_per_packet <= toUslv(4, i_words_per_packet'length);
+                pushPacket(net, size => 15);
+                checkPacket(net, size => 4);
+                checkPacket(net, size => 4, startVal => 4 + 1);
+                checkPacket(net, size => 4, startVal => 8 + 1);
+                checkPacket(net, size => 3, startVal => 12 + 1, blocking  => true);
+            end if;
+
+            --------------------------------------------------------------------
+            --------------------------------------------------------------------
+            if run("en_testing") then
+                i_en <= '0';
                 i_words_per_packet <= toUslv(15, i_words_per_packet'length);
 
-                pushPacket(net, 10);
-                checkPacket(net, 10);
-
-                pushPacket(net, 20);
-                checkPacket(net, 15, 1);
-                checkPacket(net, 5, 16);
-
-            end if;
-
-
-            --------------------------------------------------------------------
-            --------------------------------------------------------------------
-            if run("Basic") then
+                pushPacket(net, size => 34);
+                checkPacket(net, size => 15);
+                wait for 50 * C_CLK_PERIOD;
                 i_en <= '1';
-                -- One value
-                push_axi_stream(net, C_AXIS_MASTER, toUslv(5, G_STREAM_WIDTH));
-                check_axi_stream(net, C_AXIS_SLAVE, toUslv(5, G_STREAM_WIDTH), blocking => false, msg => "data a");
-                -- Second value
-                wait for 5*C_CLK_PERIOD;
-                push_axi_stream(net, C_AXIS_MASTER, toUslv(10, G_STREAM_WIDTH));
-                check_axi_stream(net, C_AXIS_SLAVE, toUslv(10, G_STREAM_WIDTH), blocking => false, msg => "data b");
-            end if;
+                wait for 50 * C_CLK_PERIOD;
+                checkPacket(net, size => 15, startVal => 15 + 1);
+                wait for 50 * C_CLK_PERIOD;
+                checkPacket(net, size => 4, startVal => 30 + 1);
 
-            --------------------------------------------------------------------
-            --------------------------------------------------------------------
-            if run("FullThrottle") then
-                i_en <= '1';
-                push100(net);
-                check100(net);
             end if;
 
 
